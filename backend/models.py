@@ -3,8 +3,6 @@ from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
 
 class User(db.Model):
-    __tablename__ = 'users'
-
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(30), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
@@ -24,8 +22,6 @@ class User(db.Model):
     bookings = db.relationship('Booking', backref='user', lazy=True)  # For trekkers, this is list of bookings they have made.
 
 class Trek(db.Model):
-    __tablename__ = 'treks'
-
     id = db.Column(db.Integer, primary_key=True)
     assigned_staff_id = db.Column(db.Integer, db.ForeignKey(User.id), nullable=True)  # A trek can (or cannot) be assigned to a staff member.
 
@@ -37,12 +33,12 @@ class Trek(db.Model):
     duration = db.Column(db.Integer, nullable=False)  # in days
     length = db.Column(db.Float, nullable=False)  # in kilometers
     difficulty = db.Column(db.String(20), nullable=False)  # 'easy', 'moderate', 'difficult'
-    status = db.Column(db.String(20), nullable=False, default='open')  # 'open', 'completed'
+    status = db.Column(db.String(20), nullable=False, default='open')  # 'open', 'sold_out', 'completed'
     min_age = db.Column(db.Integer, nullable=False)  # Minimum age required to book the trek.
     max_age = db.Column(db.Integer, nullable=False)  # Maximum age allowed to book the trek.
 
     total_slots = db.Column(db.Integer, nullable=False)
-    available_slots = db.Column(db.Integer, nullable=False, default=Trek.total_slots)
+    available_slots = db.Column(db.Integer, nullable=False)  # At the time of trek creation, available_slots = total_slots. When available_slots = 0, the trek's status will be updated to 'sold_out'.
     price = db.Column(db.Float, nullable=False)
 
     # Relationship
@@ -50,8 +46,6 @@ class Trek(db.Model):
     # an attribute `assigned_staff` would be available to access the staff member assigned to the trek.
 
 class Booking(db.Model):
-    __tablename__ = 'bookings'
-
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey(User.id), nullable=False)
     trek_id = db.Column(db.Integer, db.ForeignKey(Trek.id), nullable=False)
