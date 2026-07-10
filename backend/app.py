@@ -69,7 +69,7 @@ def login():
     user = User.query.filter_by(username=data['username']).first()
 
     if user and check_password_hash(user.password_hash, data['password']):
-        access_token = create_access_token(identity=user.id)
+        access_token = create_access_token(identity=str(user.id))
         return jsonify({'message': 'Login successful', 'data': {'username': user.username,
                                                                 'email': user.email,
                                                                 'phone': user.phone,
@@ -88,7 +88,7 @@ def login():
 @app.route('/api/trekker/dashboard', methods=['GET'])
 @jwt_required()
 def trekker_dashboard():
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
 
     upcoming = (
         Booking.query
@@ -130,7 +130,7 @@ def trekker_dashboard():
 @app.route('/api/bookings', methods=['POST'])
 @jwt_required()
 def create_booking():
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     user = User.query.get(user_id)
     data = request.get_json()
 
@@ -175,7 +175,7 @@ def create_booking():
 @app.route('/api/my-bookings', methods=['GET'])
 @jwt_required()
 def get_my_bookings():
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     bookings = Booking.query.filter_by(user_id=user_id, booking_status='booked').all()
 
     result = []
@@ -199,7 +199,7 @@ def get_my_bookings():
 @app.route('/api/trekker/history', methods=['GET'])
 @jwt_required()
 def get_trekker_history():
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     bookings = (
         Booking.query
         .filter_by(user_id=user_id)
@@ -226,7 +226,8 @@ def get_trekker_history():
 @app.route('/api/trekker/profile', methods=['GET'])
 @jwt_required()
 def get_trekker_profile():
-    user = User.query.get(get_jwt_identity())
+    user_id = int(get_jwt_identity())
+    user = User.query.get(user_id)
     return jsonify({'data': {
         'username': user.username,
         'fname': user.fname,
@@ -241,7 +242,8 @@ def get_trekker_profile():
 @app.route('/api/trekker/profile', methods=['PUT'])
 @jwt_required()
 def update_trekker_profile():
-    user = User.query.get(get_jwt_identity())
+    user_id = int(get_jwt_identity())
+    user = User.query.get(user_id)
     data = request.get_json()
 
     if 'email' in data and data['email'] != user.email:
@@ -259,7 +261,8 @@ def update_trekker_profile():
 @app.route('/api/trekker/profile/password', methods=['PUT'])
 @jwt_required()
 def change_trekker_password():
-    user = User.query.get(get_jwt_identity())
+    user_id = int(get_jwt_identity())
+    user = User.query.get(user_id)
     data = request.get_json()
 
     if not data or not all(k in data for k in ('current_password', 'new_password')):
@@ -284,7 +287,8 @@ def staff_required(fn):
     @wraps(fn)
     @jwt_required()
     def wrapper(*args, **kwargs):
-        current_user = User.query.get(get_jwt_identity())
+        user_id = int(get_jwt_identity())
+        current_user = User.query.get(user_id)
         if not current_user or current_user.role != 'staff':
             return jsonify({'message': 'Staff access required'}), 403
         return fn(*args, **kwargs)
@@ -294,7 +298,7 @@ def staff_required(fn):
 @app.route('/api/staff/dashboard', methods=['GET'])
 @staff_required
 def staff_dashboard():
-    staff_id = get_jwt_identity()
+    staff_id = int(get_jwt_identity())
     assigned_treks = Trek.query.filter_by(assigned_staff_id=staff_id).all()
 
     total_participants = 0
@@ -329,7 +333,7 @@ def staff_dashboard():
 @app.route('/api/staff/my-treks', methods=['GET'])
 @staff_required
 def staff_my_treks():
-    staff_id = get_jwt_identity()
+    staff_id = int(get_jwt_identity())
     treks = Trek.query.filter_by(assigned_staff_id=staff_id).order_by(Trek.start_date.desc()).all()
 
     result = []
@@ -354,7 +358,7 @@ def staff_my_treks():
 @app.route('/api/staff/treks/<int:trek_id>/participants', methods=['GET'])
 @staff_required
 def staff_trek_participants(trek_id):
-    staff_id = get_jwt_identity()
+    staff_id = int(get_jwt_identity())
     trek = Trek.query.get(trek_id)
 
     if not trek:
@@ -385,7 +389,7 @@ def staff_trek_participants(trek_id):
 @app.route('/api/staff/participants', methods=['GET'])
 @staff_required
 def staff_all_participants():
-    staff_id = get_jwt_identity()
+    staff_id = int(get_jwt_identity())
     treks = Trek.query.filter_by(assigned_staff_id=staff_id).all()
 
     result = []
@@ -405,7 +409,8 @@ def staff_all_participants():
 @app.route('/api/staff/profile', methods=['GET'])
 @staff_required
 def get_staff_profile():
-    staff = User.query.get(get_jwt_identity())
+    staff_id = int(get_jwt_identity())
+    staff = User.query.get(staff_id)
     return jsonify({'data': {
         'username': staff.username,
         'fname': staff.fname,
@@ -420,7 +425,8 @@ def get_staff_profile():
 @app.route('/api/staff/profile', methods=['PUT'])
 @staff_required
 def update_staff_profile():
-    staff = User.query.get(get_jwt_identity())
+    staff_id = int(get_jwt_identity())
+    staff = User.query.get(staff_id)
     data = request.get_json()
 
     if 'email' in data and data['email'] != staff.email:
@@ -441,7 +447,8 @@ def update_staff_profile():
 @app.route('/api/staff/profile/password', methods=['PUT'])
 @staff_required
 def change_staff_password():
-    staff = User.query.get(get_jwt_identity())
+    staff_id = int(get_jwt_identity())
+    staff = User.query.get(staff_id)
     data = request.get_json()
 
     if not data or not all(k in data for k in ('current_password', 'new_password')):
@@ -466,7 +473,7 @@ def admin_required(fn):
     @wraps(fn)
     @jwt_required()
     def wrapper(*args, **kwargs):
-        user_id = get_jwt_identity()
+        user_id = int(get_jwt_identity())
         current_user = User.query.get(user_id)
         if not current_user or current_user.role != 'admin':
             return jsonify({'message': 'Admin access required'}), 403
@@ -569,7 +576,7 @@ def admin_search():
 @app.route('/api/admin/settings', methods=['GET'])
 @admin_required
 def admin_get_settings():
-    admin_id = get_jwt_identity()
+    admin_id = int(get_jwt_identity())
     admin = User.query.get(admin_id)
     return jsonify({'data': {
         'username': admin.username,
@@ -585,7 +592,7 @@ def admin_get_settings():
 @app.route('/api/admin/settings', methods=['PUT'])
 @admin_required
 def admin_update_settings():
-    admin_id = get_jwt_identity()
+    admin_id = int(get_jwt_identity())
     admin = User.query.get(admin_id)
     data = request.get_json()
 
@@ -605,7 +612,7 @@ def admin_update_settings():
 @app.route('/api/admin/settings/password', methods=['PUT'])
 @admin_required
 def admin_change_password():
-    admin_id = get_jwt_identity()
+    admin_id = int(get_jwt_identity())
     admin = User.query.get(admin_id)
     data = request.get_json()
 
@@ -763,7 +770,9 @@ def admin_reopen_trek(trek_id):
     db.session.commit()
     return jsonify({'message': 'Trek reopened successfully'}), 200
 
+
 # ============================================== STAFF CRUD ==============================================
+
 
 @app.route('/api/admin/staff', methods=['POST'])
 @admin_required
@@ -863,6 +872,7 @@ def admin_update_user_status(user_id):
     db.session.commit()
     status_word = 'activated' if user.is_active else 'deactivated'
     return jsonify({'message': f'User {status_word} successfully.{cascade_message}'}), 200
+
 
 # ============================================== USER CRUD ==============================================
 
