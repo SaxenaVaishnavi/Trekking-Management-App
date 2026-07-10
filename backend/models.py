@@ -33,7 +33,7 @@ class Trek(db.Model):
     duration = db.Column(db.Integer, nullable=False)  # in days
     length = db.Column(db.Float, nullable=False)  # in kilometers
     difficulty = db.Column(db.String(20), nullable=False)  # 'easy', 'moderate', 'difficult'
-    status = db.Column(db.String(20), nullable=False, default='open')  # 'open', 'sold_out', 'completed'
+    status = db.Column(db.String(20), nullable=False, default='open')  # 'open', 'sold_out', 'completed', 'closed' - this is when the admin closes the trek
     min_age = db.Column(db.Integer, nullable=False)  # Minimum age required to book the trek.
     max_age = db.Column(db.Integer, nullable=False)  # Maximum age allowed to book the trek.
 
@@ -52,7 +52,7 @@ class Booking(db.Model):
 
     booking_date = db.Column(db.DateTime, nullable=False)
     payment_status = db.Column(db.String(20), nullable=False, default='pending')  # 'pending', 'successful', 'failed'
-    booking_status = db.Column(db.String(20), nullable=False, default='booked')   # 'booked' - when payment received, 'cancelled' - if cancelled by the user, 'completed' - when trek is completed.
+    booking_status = db.Column(db.String(20), nullable=False, default='booked')   # 'booked' - when payment received, 'cancelled' - if cancelled by the user, 'completed' - when trek is completed, 'invalidated' - if admin closes the trek or deactivates the user. 
 
     # Relationship
     # an attribute `user` would be available to access the user who made the booking.
