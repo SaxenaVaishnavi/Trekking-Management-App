@@ -118,9 +118,7 @@ export default {
   async mounted() {
     try {
       const token = localStorage.getItem('access_token')
-      const res = await axios.get(`${API_BASE_URL}/staff/profile`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      const res = await axios.get(`${API_BASE_URL}/staff/profile`, this.authHeader())
       this.profile = res.data.data
     } catch (err) {
       console.error('Failed to load profile', err)

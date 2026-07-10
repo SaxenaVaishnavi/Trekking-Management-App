@@ -4,6 +4,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import LandingView from '../views/LandingView.vue'
 import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
+import NotFoundView from '../views/NotFoundView.vue'
+import UnauthorizedView from '../views/UnauthorizedView.vue'
 
 // Trekker Views
 import TrekkerLayout from '../components/layout/TrekkerLayout.vue'
@@ -36,15 +38,14 @@ const routes = [
   { path: '/', name: 'Landing', component: LandingView },
   { path: '/login', name: 'Login', component: LoginView },
   { path: '/register', name: 'Register', component: RegisterView },
-  
 
   // Trekker Routes (these are nested under layout)
   {
     path: '/trekker',
     component: TrekkerLayout,
-    meta: { requiresAuth:true, role: 'trekker' },
+    meta: { requiresAuth: true, role: 'trekker' },
     children: [
-      { path: '', redirect: { name: 'TrekkerDashboard' }},     // Redirect to dashboard by default
+      { path: '', redirect: { name: 'TrekkerDashboard' } },     // Redirect to dashboard by default
       { path: 'dashboard', name: 'TrekkerDashboard', component: TrekkerDashboardView },
       { path: 'treks', name: 'BrowseTreks', component: BrowseTreksView },
       { path: 'my-bookings', name: 'MyBookings', component: MyBookingsView },
@@ -57,9 +58,9 @@ const routes = [
   {
     path: '/staff',
     component: StaffLayout,
-    meta: { requiresAuth:true, role: 'staff' },
+    meta: { requiresAuth: true, role: 'staff' },
     children: [
-      { path: '', redirect: { name: 'StaffDashboard' }},     // Redirect to dashboard by default
+      { path: '', redirect: { name: 'StaffDashboard' } },     // Redirect to dashboard by default
       { path: 'dashboard', name: 'StaffDashboard', component: StaffDashboardView },
       { path: 'my-treks', name: 'MyTreks', component: MyTreksView },
       { path: 'participants', name: 'Participants', component: ParticipantsView },
@@ -71,9 +72,9 @@ const routes = [
   {
     path: '/admin',
     component: AdminLayout,
-    meta: { requiresAuth:true, role: 'admin' },
+    meta: { requiresAuth: true, role: 'admin' },
     children: [
-      { path: '', redirect: { name: 'AdminDashboard' }},     // Redirect to dashboard by default
+      { path: '', redirect: { name: 'AdminDashboard' } },     // Redirect to dashboard by default
       { path: 'dashboard', name: 'AdminDashboard', component: AdminDashboardView },
       { path: 'treks', name: 'AdminTreks', component: AdminTreksView },
       { path: 'users', name: 'AdminUsers', component: AdminUsersView },
@@ -83,7 +84,11 @@ const routes = [
       { path: 'reports', name: 'AdminReports', component: AdminReportsView },
       { path: 'settings', name: 'AdminSettings', component: AdminSettingsView }
     ]
-  }
+  },
+
+  // Error Routes
+  { path: '/unauthorized', name: 'Unauthorized', component: UnauthorizedView },
+  { path: '/:pathMatch(.*)*', name: 'NotFound', component: NotFoundView }
 ]
 
 const router = createRouter({

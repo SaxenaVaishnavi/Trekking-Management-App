@@ -15,9 +15,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = '23f2003009'  # My IITM roll no
 
 # Initialize extensions
+CORS(app)
 db.init_app(app)
 jwt = JWTManager(app)
-CORS(app)
 
 
 # ====================================================================================

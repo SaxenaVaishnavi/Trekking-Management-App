@@ -24,6 +24,11 @@
             </div>
 
             <div class="mb-3">
+                <label class="form-label">Username</label>
+                <input :value="profile.username" type="text" class="form-control" disabled />
+            </div>
+
+            <div class="mb-3">
               <label class="form-label">Email</label>
               <input v-model="profile.email" type="email" class="form-control" required />
             </div>
@@ -97,7 +102,7 @@ export default {
 
   data() {
     return {
-      profile: { fname: '', lname: '', email: '', phone: '', age: null, language: '' },
+      profile: { username: '', fname: '', lname: '', email: '', phone: '', age: null, language: '' },
       passwordForm: { current_password: '', new_password: '' },
       confirmPassword: '',
       savingProfile: false,
