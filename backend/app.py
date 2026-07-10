@@ -127,18 +127,174 @@ def trekker_dashboard():
     }}), 200
 
 
+@app.route('/api/bookings', methods=['POST'])
+@jwt_required()
+def create_booking():
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    data = request.get_json()
+
+    if not data or 'trek_id' not in data:
+        return jsonify({'message': 'trek_id is required'}), 400
+
+    trek = Trek.query.get(data['trek_id'])
+    if not trek:
+        return jsonify({'message': 'Trek not found'}), 404
+
+    if trek.status != 'open' or trek.available_slots <= 0:
+        return jsonify({'message': 'This trek is not available for booking'}), 400
+
+    if user.age < trek.min_age or user.age > trek.max_age:
+        return jsonify({'message': f'This trek requires age between {trek.min_age} and {trek.max_age}'}), 400
+
+    existing = Booking.query.filter_by(
+        user_id=user_id, trek_id=trek.id, booking_status='booked'
+    ).first()
+
+    if existing:
+        return jsonify({'message': 'You have already booked this trek'}), 400
+
+    new_booking = Booking(
+        user_id=user_id,
+        trek_id=trek.id,
+        booking_date=datetime.utcnow(),
+        payment_status='pending',
+        booking_status='booked'
+    )
+
+    trek.available_slots -= 1
+    if trek.available_slots == 0:
+        trek.status = 'sold_out'
+
+    db.session.add(new_booking)
+    db.session.commit()
+
+    return jsonify({'message': 'Booking successful'}), 201
+
+
+@app.route('/api/my-bookings', methods=['GET'])
+@jwt_required()
+def get_my_bookings():
+    user_id = get_jwt_identity()
+    bookings = Booking.query.filter_by(user_id=user_id, booking_status='booked').all()
+
+    result = []
+    for b in bookings:
+        trek = b.trek
+        result.append({
+            'booking_id': b.id,
+            'trek_id': trek.id,
+            'trek_name': trek.name,
+            'location': trek.location,
+            'start_date': trek.start_date.isoformat(),
+            'end_date': trek.end_date.isoformat(),
+            'price': trek.price,
+            'booking_date': b.booking_date.isoformat(),
+            'payment_status': b.payment_status,
+            'booking_status': b.booking_status
+        })
+    return jsonify({'data': result}), 200
+
+
+@app.route('/api/trekker/history', methods=['GET'])
+@jwt_required()
+def get_trekker_history():
+    user_id = get_jwt_identity()
+    bookings = (
+        Booking.query
+        .filter_by(user_id=user_id)
+        .filter(Booking.booking_status.in_(['cancelled', 'completed', 'invalidated']))
+        .order_by(Booking.booking_date.desc())
+        .all()
+    )
+
+    result = []
+    for b in bookings:
+        trek = b.trek
+        result.append({
+            'booking_id': b.id,
+            'trek_name': trek.name,
+            'location': trek.location,
+            'start_date': trek.start_date.isoformat(),
+            'end_date': trek.end_date.isoformat(),
+            'price': trek.price,
+            'booking_status': b.booking_status
+        })
+    return jsonify({'data': result}), 200
+
+
+@app.route('/api/trekker/profile', methods=['GET'])
+@jwt_required()
+def get_trekker_profile():
+    user = User.query.get(get_jwt_identity())
+    return jsonify({'data': {
+        'username': user.username,
+        'fname': user.fname,
+        'lname': user.lname,
+        'email': user.email,
+        'phone': user.phone,
+        'age': user.age,
+        'language': user.language
+    }}), 200
+
+
+@app.route('/api/trekker/profile', methods=['PUT'])
+@jwt_required()
+def update_trekker_profile():
+    user = User.query.get(get_jwt_identity())
+    data = request.get_json()
+
+    if 'email' in data and data['email'] != user.email:
+        if User.query.filter_by(email=data['email']).first():
+            return jsonify({'message': 'Email already in use'}), 400
+
+    for field in ['fname', 'lname', 'email', 'phone', 'age', 'language']:
+        if field in data:
+            setattr(user, field, data[field])
+
+    db.session.commit()
+    return jsonify({'message': 'Profile updated successfully'}), 200
+
+
+@app.route('/api/trekker/profile/password', methods=['PUT'])
+@jwt_required()
+def change_trekker_password():
+    user = User.query.get(get_jwt_identity())
+    data = request.get_json()
+
+    if not data or not all(k in data for k in ('current_password', 'new_password')):
+        return jsonify({'message': 'current_password and new_password are required'}), 400
+
+    if not check_password_hash(user.password_hash, data['current_password']):
+        return jsonify({'message': 'Current password is incorrect'}), 401
+
+    if len(data['new_password']) < 6:
+        return jsonify({'message': 'New password must be at least 6 characters'}), 400
+
+    user.password_hash = generate_password_hash(data['new_password'])
+    db.session.commit()
+    return jsonify({'message': 'Password changed successfully'}), 200
+
+
+
 # ============================================= STAFF ROUTES ====================================
 # ==============================================================================================
 
+def staff_required(fn):
+    @wraps(fn)
+    @jwt_required()
+    def wrapper(*args, **kwargs):
+        current_user = User.query.get(get_jwt_identity())
+        if not current_user or current_user.role != 'staff':
+            return jsonify({'message': 'Staff access required'}), 403
+        return fn(*args, **kwargs)
+    return wrapper
+
+
 @app.route('/api/staff/dashboard', methods=['GET'])
-@jwt_required()
+@staff_required
 def staff_dashboard():
     staff_id = get_jwt_identity()
-    staff = User.query.get(staff_id)
-
-    if staff.role != 'staff':
-        return jsonify({'message': 'Access denied'}), 403
-
     assigned_treks = Trek.query.filter_by(assigned_staff_id=staff_id).all()
 
     total_participants = 0
@@ -168,6 +324,138 @@ def staff_dashboard():
         },
         'assigned_treks': treks_data
     }}), 200
+
+
+@app.route('/api/staff/my-treks', methods=['GET'])
+@staff_required
+def staff_my_treks():
+    staff_id = get_jwt_identity()
+    treks = Trek.query.filter_by(assigned_staff_id=staff_id).order_by(Trek.start_date.desc()).all()
+
+    result = []
+    for t in treks:
+        participant_count = Booking.query.filter_by(trek_id=t.id, booking_status='booked').count()
+        result.append({
+            'id': t.id,
+            'name': t.name,
+            'location': t.location,
+            'start_date': t.start_date.isoformat(),
+            'end_date': t.end_date.isoformat(),
+            'status': t.status,
+            'total_slots': t.total_slots,
+            'available_slots': t.available_slots,
+            'participant_count': participant_count
+        })
+
+    return jsonify({'data': result}), 200
+
+
+# this is used by a modal
+@app.route('/api/staff/treks/<int:trek_id>/participants', methods=['GET'])
+@staff_required
+def staff_trek_participants(trek_id):
+    staff_id = get_jwt_identity()
+    trek = Trek.query.get(trek_id)
+
+    if not trek:
+        return jsonify({'message': 'Trek not found'}), 404
+
+    # Authorization: this trek must actually be assigned to the requesting staff member
+    if trek.assigned_staff_id != staff_id:
+        return jsonify({'message': 'You are not assigned to this trek'}), 403
+
+    bookings = Booking.query.filter_by(trek_id=trek.id, booking_status='booked').all()
+
+    participants = []
+    for b in bookings:
+        participants.append({
+            'booking_id': b.id,
+            'name': f'{b.user.fname} {b.user.lname}',
+            'age': b.user.age,
+            'language': b.user.language,
+            'phone': b.user.phone
+        })
+
+    return jsonify({'data': {
+        'trek_name': trek.name,
+        'participants': participants
+    }}), 200
+
+
+@app.route('/api/staff/participants', methods=['GET'])
+@staff_required
+def staff_all_participants():
+    staff_id = get_jwt_identity()
+    treks = Trek.query.filter_by(assigned_staff_id=staff_id).all()
+
+    result = []
+    for t in treks:
+        bookings = Booking.query.filter_by(trek_id=t.id, booking_status='booked').all()
+        for b in bookings:
+            result.append({
+                'trek_name': t.name,
+                'name': f'{b.user.fname} {b.user.lname}',
+                'age': b.user.age,
+                'language': b.user.language,
+                'phone': b.user.phone
+            })
+
+    return jsonify({'data': result}), 200
+
+@app.route('/api/staff/profile', methods=['GET'])
+@staff_required
+def get_staff_profile():
+    staff = User.query.get(get_jwt_identity())
+    return jsonify({'data': {
+        'username': staff.username,
+        'fname': staff.fname,
+        'lname': staff.lname,
+        'email': staff.email,
+        'phone': staff.phone,
+        'age': staff.age,
+        'language': staff.language
+    }}), 200
+
+
+@app.route('/api/staff/profile', methods=['PUT'])
+@staff_required
+def update_staff_profile():
+    staff = User.query.get(get_jwt_identity())
+    data = request.get_json()
+
+    if 'email' in data and data['email'] != staff.email:
+        if User.query.filter_by(email=data['email']).first():
+            return jsonify({'message': 'Email already in use'}), 400
+
+    if 'age' in data and data['age'] < 21:
+        return jsonify({'message': 'Trek staff must be at least 21 years old'}), 400
+
+    for field in ['fname', 'lname', 'email', 'phone', 'age', 'language']:
+        if field in data:
+            setattr(staff, field, data[field])
+
+    db.session.commit()
+    return jsonify({'message': 'Profile updated successfully'}), 200
+
+
+@app.route('/api/staff/profile/password', methods=['PUT'])
+@staff_required
+def change_staff_password():
+    staff = User.query.get(get_jwt_identity())
+    data = request.get_json()
+
+    if not data or not all(k in data for k in ('current_password', 'new_password')):
+        return jsonify({'message': 'current_password and new_password are required'}), 400
+
+    if not check_password_hash(staff.password_hash, data['current_password']):
+        return jsonify({'message': 'Current password is incorrect'}), 401
+
+    if len(data['new_password']) < 6:
+        return jsonify({'message': 'New password must be at least 6 characters'}), 400
+
+    staff.password_hash = generate_password_hash(data['new_password'])
+    db.session.commit()
+    return jsonify({'message': 'Password changed successfully'}), 200
 
 
 # ============================================ ADMIN ROUTES ====================================

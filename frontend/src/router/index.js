@@ -91,4 +91,32 @@ const router = createRouter({
   routes
 })
 
+// ---------- Navigation Guard ----------
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('access_token')
+  const role = localStorage.getItem('role')
+
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
+  const requiredRole = to.matched.find(record => record.meta.role)?.meta.role
+
+  // Route needs auth but no token exists → send to login
+  if (requiresAuth && !token) {
+    return next({ name: 'Login' })
+  }
+
+  // Route needs a specific role, and the logged-in user isn't that role
+  if (requiredRole && requiredRole !== role) {
+    return next({ name: 'Unauthorized' })
+  }
+
+  // Logged-in user manually visits /login or /register → bounce to their dashboard
+  if ((to.name === 'Login' || to.name === 'Register') && token) {
+    if (role === 'admin') return next({ name: 'AdminDashboard' })
+    if (role === 'staff') return next({ name: 'StaffDashboard' })
+    if (role === 'trekker') return next({ name: 'TrekkerDashboard' })
+  }
+
+  next()
+})
+
 export default router

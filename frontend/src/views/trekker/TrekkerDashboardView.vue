@@ -21,6 +21,7 @@
               class="btn btn-sm w-100"
               :class="trek.available_slots > 0 ? 'btn-outline-primary' : 'btn-outline-secondary'"
               :disabled="trek.available_slots === 0"
+              @click="openBookingModal(trek)"
             >
               {{ trek.available_slots > 0 ? 'Book Now' : 'Not Available' }}
             </button>
@@ -50,7 +51,11 @@
         </tr>
       </tbody>
     </table>
+
     <router-link to="/trekker/my-bookings">View All Bookings →</router-link>
+
+    <BookTrekModal ref="bookModal" @booked="fetchDashboard" />
+
   </div>
 </template>
 
@@ -58,10 +63,14 @@
 
 <script>
 import axios from 'axios'
+import BookTrekModal from '../../components/BookTrekModal.vue'
+
 const API_BASE_URL = 'http://127.0.0.1:5000/api'
 
 export default {
   name: 'TrekkerDashboardView',
+
+  components: { BookTrekModal },
 
   data() {
     return {
@@ -73,18 +82,28 @@ export default {
   },
 
   async mounted() {
-    try {
-      const token = localStorage.getItem('access_token')
-      const response = await axios.get(`${API_BASE_URL}/trekker/dashboard`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      
-      this.availableTreks = response.data.data.available_treks
-      this.recentBookings = response.data.data.recent_bookings
-    } catch (err) {
-      console.error('Failed to load dashboard', err)
-    } finally {
-      this.loading = false
+    await this.fetchDashboard()
+  },
+
+  methods: {
+    async fetchDashboard() {
+      this.loading = true
+      try {
+        const token = localStorage.getItem('access_token')
+        const response = await axios.get(`${API_BASE_URL}/trekker/dashboard`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+
+        this.availableTreks = response.data.data.available_treks
+        this.recentBookings = response.data.data.recent_bookings
+      } catch (err) {
+        console.error('Failed to load dashboard', err)
+      } finally {
+        this.loading = false
+      }
+    },
+    openBookingModal(trek) {
+      this.$refs.bookModal.open(trek)
     }
   }
 }
