@@ -8,10 +8,17 @@ import RegisterView from '../views/RegisterView.vue'
 // Trekker Views
 import TrekkerLayout from '../components/layout/TrekkerLayout.vue'
 import TrekkerDashboardView from '../views/trekker/TrekkerDashboardView.vue'
+import BrowseTreksView from '../views/trekker/BrowseTreksView.vue'
+import MyBookingsView from '../views/trekker/MyBookingsView.vue'
+import HistoryView from '../views/trekker/HistoryView.vue'
+import TrekkerProfileView from '../views/trekker/TrekkerProfileView.vue'
 
 // Staff Views
 import StaffLayout from '../components/layout/StaffLayout.vue'
 import StaffDashboardView from '../views/staff/StaffDashboardView.vue'
+import MyTreksView from '../views/staff/MyTreksView.vue'
+import ParticipantsView from '../views/staff/ParticipantsView.vue'
+import StaffProfileView from '../views/staff/StaffProfileView.vue'
 
 // Admin Views
 import AdminLayout from '../components/layout/AdminLayout.vue'
@@ -38,7 +45,11 @@ const routes = [
     meta: { requiresAuth:true, role: 'trekker' },
     children: [
       { path: '', redirect: { name: 'TrekkerDashboard' }},     // Redirect to dashboard by default
-      { path: 'dashboard', name: 'TrekkerDashboard', component: TrekkerDashboardView }
+      { path: 'dashboard', name: 'TrekkerDashboard', component: TrekkerDashboardView },
+      { path: 'treks', name: 'BrowseTreks', component: BrowseTreksView },
+      { path: 'my-bookings', name: 'MyBookings', component: MyBookingsView },
+      { path: 'history', name: 'History', component: HistoryView },
+      { path: 'profile', name: 'TrekkerProfile', component: TrekkerProfileView }
     ]
   },
 
@@ -49,7 +60,10 @@ const routes = [
     meta: { requiresAuth:true, role: 'staff' },
     children: [
       { path: '', redirect: { name: 'StaffDashboard' }},     // Redirect to dashboard by default
-      { path: 'dashboard', name: 'StaffDashboard', component: StaffDashboardView }
+      { path: 'dashboard', name: 'StaffDashboard', component: StaffDashboardView },
+      { path: 'my-treks', name: 'MyTreks', component: MyTreksView },
+      { path: 'participants', name: 'Participants', component: ParticipantsView },
+      { path: 'profile', name: 'StaffProfile', component: StaffProfileView }
     ]
   },
 
