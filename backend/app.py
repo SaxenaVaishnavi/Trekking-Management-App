@@ -4,7 +4,7 @@ from models import db, User, Trek, Booking
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from functools import wraps
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 app = Flask(__name__)
@@ -199,7 +199,7 @@ def create_booking():
     new_booking = Booking(
         user_id=user_id,
         trek_id=trek.id,
-        booking_date=datetime.utcnow(),
+        booking_date=datetime.now(timezone.utc),
         payment_status='pending',
         booking_status='booked'
     )
@@ -676,6 +676,11 @@ def admin_create_trek():
     if not data or not all(k in data for k in required):
         return jsonify({'message': 'Missing required fields'}), 400
 
+    end_date = datetime.strptime(data['end_date'], '%Y-%m-%d').date()
+
+    # If the trek's end date has already passed, mark it completed at creation
+    initial_status = 'completed' if end_date < datetime.now(timezone.utc).date() else 'open'
+
     new_trek = Trek(
         name=data['name'],
         location=data['location'],
@@ -685,7 +690,7 @@ def admin_create_trek():
         duration=data['duration'],
         length=data['length'],
         difficulty=data['difficulty'],
-        status='open',
+        status=initial_status,
         min_age=data['min_age'],
         max_age=data['max_age'],
         total_slots=data['total_slots'],
@@ -755,6 +760,14 @@ def admin_update_trek(trek_id):
         trek.start_date = datetime.strptime(data['start_date'], '%Y-%m-%d').date()
     if 'end_date' in data:
         trek.end_date = datetime.strptime(data['end_date'], '%Y-%m-%d').date()
+
+    # Auto-complete if end_date falls in the past, unless admin explicitly closed it
+    if trek.end_date < datetime.now(timezone.utc).date() and trek.status != 'closed':
+        trek.status = 'completed'
+
+    # Auto-open a trek if the end_date is in future. Given admin hasn't explicitly closed it
+    if trek.end_date > datetime.now(timezone.utc).date() and trek.status != 'closed':
+        trek.status = 'open'
 
     # total_slots cant be less than already-booked count
     if 'total_slots' in data:
