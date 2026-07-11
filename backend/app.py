@@ -5,6 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from functools import wraps
 from datetime import datetime, timezone
+from flask_caching import Cache
 
 
 app = Flask(__name__)
@@ -13,11 +14,15 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///trekking.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = '23f2003009'  # My IITM roll no
+app.config['CACHE_TYPE'] = 'RedisCache'
+app.config['CACHE_REDIS_URL'] = 'redis://localhost:6379/0'
+
 
 # Initialize extensions
 CORS(app)
 db.init_app(app)
 jwt = JWTManager(app)
+cache = Cache(app)
 
 
 # ====================================================================================
@@ -93,6 +98,7 @@ def login():
 
 @app.route('/api/trekker/dashboard', methods=['GET'])
 @jwt_required()
+@cache.cached(timeout=60)
 def trekker_dashboard():
     user_id = int(get_jwt_identity())
 
