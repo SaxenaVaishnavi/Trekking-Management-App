@@ -74,7 +74,7 @@
 
             <div class="mb-3">
               <label class="form-label">New Password</label>
-              <input v-model="passwordForm.new_password" type="password" class="form-control" required minlength="6" />
+              <input v-model="passwordForm.new_password" type="password" class="form-control" required />
             </div>
 
             <div class="mb-3">

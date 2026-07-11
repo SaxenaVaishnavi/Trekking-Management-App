@@ -122,15 +122,51 @@ def trekker_dashboard():
             'id': t.id,
             'name': t.name,
             'location': t.location,
-            'difficulty': t.difficulty,
+            'description': t.description,
+            'start_date': t.start_date.isoformat(),
+            'end_date': t.end_date.isoformat(),
             'duration': t.duration,
-            'available_slots': t.available_slots
+            'length': t.length,
+            'difficulty': t.difficulty,
+            'status': t.status,
+            'min_age': t.min_age,
+            'max_age': t.max_age,
+            'total_slots': t.total_slots,
+            'available_slots': t.available_slots,
+            'price': t.price
         })
 
     return jsonify({'data': {
         'available_treks': treks_data,
         'recent_bookings': recent_bookings
     }}), 200
+
+
+@app.route('/api/treks', methods=['GET'])
+@jwt_required()
+def get_treks():
+    treks = Trek.query.filter_by(status='open').all()
+    result = []
+    for trek in treks:
+        result.append({
+            'id': trek.id,
+            'name': trek.name,
+            'location': trek.location,
+            'description': trek.description,
+            'start_date': trek.start_date.isoformat(),
+            'end_date': trek.end_date.isoformat(),
+            'duration': trek.duration,
+            'length': trek.length,
+            'difficulty': trek.difficulty,
+            'status': trek.status,
+            'min_age': trek.min_age,
+            'max_age': trek.max_age,
+            'total_slots': trek.total_slots,
+            'available_slots': trek.available_slots,
+            'price': trek.price
+        })
+
+    return jsonify({'data': result}), 200
 
 
 @app.route('/api/bookings', methods=['POST'])
@@ -276,9 +312,6 @@ def change_trekker_password():
 
     if not check_password_hash(user.password_hash, data['current_password']):
         return jsonify({'message': 'Current password is incorrect'}), 401
-
-    if len(data['new_password']) < 6:
-        return jsonify({'message': 'New password must be at least 6 characters'}), 400
 
     user.password_hash = generate_password_hash(data['new_password'])
     db.session.commit()
@@ -462,9 +495,6 @@ def change_staff_password():
 
     if not check_password_hash(staff.password_hash, data['current_password']):
         return jsonify({'message': 'Current password is incorrect'}), 401
-
-    if len(data['new_password']) < 6:
-        return jsonify({'message': 'New password must be at least 6 characters'}), 400
 
     staff.password_hash = generate_password_hash(data['new_password'])
     db.session.commit()
