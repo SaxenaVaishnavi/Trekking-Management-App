@@ -50,9 +50,9 @@
               <span class="badge" :class="t.status === 'open' ? 'bg-success' : 'bg-secondary'">{{ t.status }}</span>
             </td>
             <td>
-              <router-link to="/staff/my-treks" class="btn btn-sm btn-primary">
-                {{ t.status === 'open' ? 'Manage' : 'View' }}
-              </router-link>
+               <router-link to="/staff/my-treks" class="btn btn-sm btn-outline-primary">
+                View in My Treks
+               </router-link>
             </td>
           </tr>
         </tbody>

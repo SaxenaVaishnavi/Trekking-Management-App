@@ -28,7 +28,10 @@
 
           <td>
             <button class="btn btn-sm btn-outline-primary" @click="openParticipants(t)">
-              More Details
+              See Participants
+            </button>
+            <button v-if="t.status === 'open'" class="btn btn-sm btn-outline-danger" @click="closeTrek(t)">
+              Close Trek
             </button>
           </td>
 
@@ -72,6 +75,10 @@ export default {
   },
 
   methods: {
+    authHeader() {
+      return { headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` } }
+    },
+    
     statusBadge(status) {
       if (status === 'open') return 'bg-success'
       if (status === 'sold_out') return 'bg-warning text-dark'
@@ -81,6 +88,17 @@ export default {
     
     openParticipants(trek) {
       this.$refs.participantsModal.open(trek.id)
+    }, 
+
+    async closeTrek(trek) {
+      if (!confirm(`Close "${trek.name}"? It will no longer be bookable, and any active bookings for it will be invalidated.`)) return
+      try {
+        const res = await axios.put(`${API_BASE_URL}/staff/treks/${trek.id}/close`, {}, this.authHeader())
+        alert(res.data.message)
+        await this.fetchTreks()
+      } catch (err) {
+        alert(err.response?.data?.message || 'Failed to close trek')
+      }
     }
   }
 }

@@ -393,6 +393,33 @@ def staff_my_treks():
     return jsonify({'data': result}), 200
 
 
+@app.route('/api/staff/treks/<int:trek_id>/close', methods=['PUT'])
+@staff_required
+def staff_close_trek(trek_id):
+    staff_id = int(get_jwt_identity())
+    trek = Trek.query.get(trek_id)
+
+    if not trek:
+        return jsonify({'message': 'Trek not found'}), 404
+
+    # Authorization: staff can only close treks assigned to them
+    if trek.assigned_staff_id != staff_id:
+        return jsonify({'message': 'You are not assigned to this trek'}), 403
+
+    if trek.status == 'closed':
+        return jsonify({'message': 'Trek is already closed'}), 400
+
+    trek.status = 'closed'
+
+    # Same cascade as the admin close route: invalidate active bookings
+    active_bookings = Booking.query.filter_by(trek_id=trek.id, booking_status='booked').all()
+    for b in active_bookings:
+        b.booking_status = 'invalidated'
+
+    db.session.commit()
+    return jsonify({'message': f'Trek closed successfully. {len(active_bookings)} booking(s) invalidated.'}), 200
+
+
 # this is used by a modal
 @app.route('/api/staff/treks/<int:trek_id>/participants', methods=['GET'])
 @staff_required
