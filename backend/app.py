@@ -68,18 +68,24 @@ def login():
 
     user = User.query.filter_by(username=data['username']).first()
 
-    if user and check_password_hash(user.password_hash, data['password']):
-        access_token = create_access_token(identity=str(user.id))
-        return jsonify({'message': 'Login successful', 'data': {'username': user.username,
-                                                                'email': user.email,
-                                                                'phone': user.phone,
-                                                                'role': user.role,
-                                                                'age': user.age,
-                                                                'language': user.language,
-                                                                'access_token': access_token}}), 200
-    else:
+    if not user or not check_password_hash(user.password_hash, data['password']):
         return jsonify({'message': 'Invalid username or password'}), 401
-
+    
+    if not user.is_active:
+        return jsonify({'message': 'Your account has been deactivates. Please contact admin.'}), 403
+    
+    access_token = create_access_token(identity=str(user.id))
+    return jsonify({'message': 'Login successful', 
+                    'data': {
+                        'username': user.username,
+                        'email': user.email,
+                        'phone': user.phone,
+                        'role': user.role,
+                        'age': user.age,
+                        'language': user.language,
+                        'access_token': access_token
+                        }
+                    }), 200
 
 
 # ============================================= TREKKER ROUTES ====================================

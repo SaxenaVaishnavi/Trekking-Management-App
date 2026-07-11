@@ -5,6 +5,11 @@
       <button class="btn btn-primary" @click="openCreateModal">+ Add New Staff</button>
     </div>
 
+    <div class="form-check">
+      <input class="form-check-input" type="checkbox" id="showInactive" v-model="showInactive" @change="fetchStaff">
+      <label class="form-check-label" for="showInactive">Show inactive users</label>
+    </div>
+
     <div v-if="loading" class="text-muted">Loading...</div>
 
     <table v-else class="table bg-white">
@@ -33,7 +38,7 @@
               :class="s.is_active ? 'btn-outline-danger' : 'btn-outline-success'"
               @click="toggleStatus(s)"
             >
-              {{ s.is_active ? 'Deactivate' : 'Activate' }}
+              {{ s.is_active ? 'Remove' : 'Activate' }}
             </button>
           </td>
         </tr>
@@ -121,6 +126,7 @@ export default {
       loading: true,
       saving: false,
       formError: '',
+      showInactive: false,
       modalInstance: null,
       form: this.emptyForm()
     }
@@ -143,7 +149,8 @@ export default {
     async fetchStaff() {
       this.loading = true
       try {
-        const res = await axios.get(`${API_BASE_URL}/admin/staff`, this.authHeader())
+        const params = this.showInactive ? '?include_inactive=true' : ''
+        const res = await axios.get(`${API_BASE_URL}/admin/staff${params}`, this.authHeader())
         this.staff = res.data.data
       } catch (err) {
         console.error('Failed to load staff', err)
