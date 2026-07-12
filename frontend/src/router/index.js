@@ -30,7 +30,6 @@ import AdminUsersView from '../views/admin/AdminUsersView.vue'
 import AdminStaffView from '../views/admin/AdminStaffView.vue'
 import AdminBookingsView from '../views/admin/AdminBookingsView.vue'
 import AdminSearchView from '../views/admin/AdminSearchView.vue'
-import AdminReportsView from '../views/admin/AdminReportsView.vue'
 import AdminSettingsView from '../views/admin/AdminSettingsView.vue'
 
 const routes = [
@@ -81,7 +80,6 @@ const routes = [
       { path: 'staff', name: 'AdminStaff', component: AdminStaffView },
       { path: 'bookings', name: 'AdminBookings', component: AdminBookingsView },
       { path: 'search', name: 'AdminSearch', component: AdminSearchView },
-      { path: 'reports', name: 'AdminReports', component: AdminReportsView },
       { path: 'settings', name: 'AdminSettings', component: AdminSettingsView }
     ]
   },

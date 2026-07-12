@@ -41,12 +41,6 @@
         </li>
 
         <li class="nav-item">
-            <router-link to="/admin/reports" class="nav-link" active-class="active">
-                <i class="bi bi-bar-chart me-2"></i>Reports
-            </router-link>
-        </li>
-
-        <li class="nav-item">
             <router-link to="/admin/settings" class="nav-link" active-class="active">
                 <i class="bi bi-gear me-2"></i>Settings
             </router-link>
